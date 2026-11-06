@@ -2,15 +2,6 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
-    inputs:
-      app_code:
-        description: 'HTML/JS код приложения'
-        required: true
-        default: '<h1>Hello World</h1>'
-      app_name:
-        description: 'Имя приложения'
-        required: false
-        default: 'MyAIApp'
 
 jobs:
   build:
@@ -39,9 +30,9 @@ jobs:
           cd myapp
           cordova platform add android
 
-      - name: Inject Custom Code
+      - name: Copy Game Code
         run: |
-          echo "${{ github.event.inputs.app_code }}" > myapp/www/index.html
+          cp index.html myapp/www/index.html
 
       - name: Build Android APK (Debug)
         run: |
