@@ -1,95 +1,370 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Cyber Clicker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Studio & Mobile Tools</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
         body {
-            margin: 0;
-            padding: 0;
-            background: #0d1117;
-            color: #ffffff;
+            background-color: #0d1117;
+            color: #c9d1d9;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            min-height: 100vh;
-            overflow: hidden;
         }
-        .header {
-            margin-top: 40px;
-            text-align: center;
+        /* Custom scrollbar for mobile sleekness */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
         }
-        .score-title {
-            font-size: 14px;
-            color: #8b949e;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
         }
-        .score {
-            font-size: 56px;
-            font-weight: 900;
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+        .glass-panel {
+            background: rgba(22, 27, 34, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(48, 54, 61, 0.7);
+        }
+        .tab-btn.active {
             color: #58a6ff;
-            margin: 5px 0;
+            border-bottom: 2px solid #58a6ff;
         }
-        .debug-log {
-            font-size: 14px;
-            color: #7ee787;
-            margin-top: 5px;
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
-        .click-area {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            flex-grow: 1;
-        }
-        .main-btn {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            background: linear-gradient(145deg, #1f6feb, #114fb4);
-            border: 4px solid #388bfd;
-            box-shadow: 0 0 30px rgba(31, 111, 235, 0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 72px;
-            outline: none;
+        .animate-pulse-subtle {
+            animation: pulse-subtle 1.5s infinite;
         }
     </style>
 </head>
-<body>
+<body class="flex flex-col h-screen overflow-hidden select-none">
 
-    <div class="header">
-        <div class="score-title">Кредиты</div>
-        <div class="score" id="score">0</div>
-        <div class="debug-log" id="debugLog">Тапай по экрану!</div>
+    <!-- Top Navigation Bar -->
+    <header class="glass-panel z-20 flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                <i data-lucide="bot" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold text-gray-100 leading-tight">AI Mobile Studio</h1>
+                <p class="text-[10px] text-gray-400 flex items-center gap-1">
+                    <span id="statusIndicator" class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                    <span id="currentModeLabel">Демо-режим (Mock API)</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="clearChatBtn" class="p-2 rounded-lg bg-gray-800 text-gray-300 hover:text-white active:scale-95 transition-all" title="Очистить чат">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+            <button id="settingsToggleBtn" class="p-2 rounded-lg bg-gray-800 text-gray-300 hover:text-white active:scale-95 transition-all" title="Настройки API">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main App Navigation Tabs -->
+    <nav class="flex border-b border-gray-800 bg-gray-900/60 text-xs text-gray-400 shrink-0">
+        <button id="tabChat" class="tab-btn active flex-1 py-2.5 text-center font-medium flex justify-center items-center gap-1.5 transition-colors">
+            <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Чат с ИИ
+        </button>
+        <button id="tabTools" class="tab-btn flex-1 py-2.5 text-center font-medium flex justify-center items-center gap-1.5 transition-colors">
+            <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Инструменты <span id="toolBadge" class="bg-blue-600/30 text-blue-400 text-[9px] px-1.5 py-0.5 rounded-full border border-blue-500/30">3</span>
+        </button>
+        <button id="tabMemory" class="tab-btn flex-1 py-2.5 text-center font-medium flex justify-center items-center gap-1.5 transition-colors">
+            <i data-lucide="database" class="w-3.5 h-3.5"></i> База Данных
+        </button>
+    </nav>
+
+    <!-- View Content Area -->
+    <main class="flex-1 relative overflow-hidden bg-gray-950">
+
+        <!-- TAB 1: Chat Stream View -->
+        <section id="viewChat" class="absolute inset-0 flex flex-col h-full w-full">
+            <!-- Messages Scroll Area -->
+            <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- Welcome Card -->
+                <div class="bg-gray-900/80 border border-gray-800 rounded-xl p-4 text-xs space-y-2">
+                    <div class="flex items-center gap-2 text-blue-400 font-bold text-sm">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> Добро пожаловать!
+                    </div>
+                    <p class="text-gray-300 leading-relaxed">
+                        Это мобильный клиент с поддержкой <strong class="text-white">вызова внешних инструментов (AI Tools)</strong>.
+                    </p>
+                    <div class="bg-gray-950/60 p-2.5 rounded-lg border border-gray-800/80 space-y-1 text-gray-400">
+                        <div class="font-semibold text-gray-300">Попробуйте команды:</div>
+                        <ul class="list-disc list-inside space-y-0.5 text-[11px]">
+                            <li><code class="text-blue-400">Посчитай синус 45 градусов в квадре</code> (ИИ вызовет JS-калькулятор)</li>
+                            <li><code class="text-blue-400">Сохрани в память телефон: +79990001122</code> (ИИ запишет в локальную базу)</li>
+                            <li><code class="text-blue-400">Поменяй тему на зеленый</code> (ИИ применит инструмент оформления)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Typing Indicator -->
+            <div id="typingIndicator" class="hidden px-4 py-2 text-xs text-gray-400 flex items-center gap-2 bg-gray-900/40 border-t border-gray-800/40">
+                <div class="flex gap-1">
+                    <div class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.2s]"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.4s]"></div>
+                </div>
+                <span id="typingText">ИИ думает...</span>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="p-3 border-t border-gray-800 bg-gray-900/90 shrink-0">
+                <form id="chatForm" class="flex gap-2 items-end">
+                    <textarea 
+                        id="userPromptInput" 
+                        rows="1" 
+                        placeholder="Напишите сообщение или команду..." 
+                        class="flex-1 bg-gray-950 text-gray-100 text-sm rounded-xl px-3.5 py-2.5 border border-gray-800 focus:outline-none focus:border-blue-500 resize-none max-h-32 transition-all"
+                    ></textarea>
+                    <button 
+                        type="submit" 
+                        id="sendBtn"
+                        class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white p-2.5 rounded-xl transition-all disabled:opacity-50 disabled:pointer-events-none shrink-0"
+                    >
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- TAB 2: AI Tools Console -->
+        <section id="viewTools" class="absolute inset-0 hidden p-4 overflow-y-auto space-y-4">
+            <h2 class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1">Доступные Инструменты (AI Tools)</h2>
+
+            <!-- Tool 1: Code Sandbox -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-3.5 space-y-2">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="code" class="w-4 h-4 text-emerald-400"></i>
+                        <span class="text-sm font-semibold text-gray-200">JS Code Runner / Calc</span>
+                    </div>
+                    <span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800/50 px-2 py-0.5 rounded-full">Активен</span>
+                </div>
+                <p class="text-xs text-gray-400">Выполняет точные вычисления или математический JavaScript-код по запросу ИИ.</p>
+                <div class="flex gap-2">
+                    <input id="manualJsInput" type="text" placeholder="Math.sqrt(144) * 5" class="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none">
+                    <button id="runManualJsBtn" class="bg-gray-800 hover:bg-gray-700 text-xs px-3 py-1.5 rounded-lg text-gray-200 active:scale-95 transition-all">Тест</button>
+                </div>
+                <div id="jsOutput" class="text-[11px] font-mono bg-gray-950 p-2 rounded border border-gray-800/80 text-emerald-400 hidden"></div>
+            </div>
+
+            <!-- Tool 2: Local Memory Storage -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-3.5 space-y-2">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="hard-drive" class="w-4 h-4 text-purple-400"></i>
+                        <span class="text-sm font-semibold text-gray-200">Память Смартфона</span>
+                    </div>
+                    <span class="text-[10px] bg-purple-950 text-purple-400 border border-purple-800/50 px-2 py-0.5 rounded-full">localStorage</span>
+                </div>
+                <p class="text-xs text-gray-400">Позволяет ИИ читать и записывать данные в локальную память устройства.</p>
+            </div>
+
+            <!-- Tool 3: Theme Switcher -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-3.5 space-y-2">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="palette" class="w-4 h-4 text-amber-400"></i>
+                        <span class="text-sm font-semibold text-gray-200">Управление UI</span>
+                    </div>
+                    <span class="text-[10px] bg-amber-950 text-amber-400 border border-amber-800/50 px-2 py-0.5 rounded-full">Устройство</span>
+                </div>
+                <p class="text-xs text-gray-400">Позволяет ИИ изменять внешнее оформление приложения по команде.</p>
+                <div class="flex gap-2">
+                    <button onclick="executeThemeTool({color: 'blue'})" class="flex-1 py-1 bg-blue-900/40 border border-blue-700/50 rounded text-xs text-blue-300">Синий</button>
+                    <button onclick="executeThemeTool({color: 'emerald'})" class="flex-1 py-1 bg-emerald-900/40 border border-emerald-700/50 rounded text-xs text-emerald-300">Изумруд</button>
+                    <button onclick="executeThemeTool({color: 'purple'})" class="flex-1 py-1 bg-purple-900/40 border border-purple-700/50 rounded text-xs text-purple-300">Фиолет</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: Memory / Knowledge Base -->
+        <section id="viewMemory" class="absolute inset-0 hidden p-4 flex flex-col space-y-3">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Сохраненные Записи</h2>
+                <button id="clearMemoryBtn" class="text-[11px] text-red-400 hover:underline">Очистить всё</button>
+            </div>
+            
+            <div class="flex gap-2">
+                <input id="memKeyInput" type="text" placeholder="Ключ" class="w-1/3 bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none">
+                <input id="memValInput" type="text" placeholder="Значение..." class="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none">
+                <button id="addMemoryBtn" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-xs font-semibold text-white active:scale-95 transition-all">
+                    +
+                </button>
+            </div>
+
+            <div id="memoryList" class="flex-1 overflow-y-auto space-y-2 pt-1">
+                <!-- Memory items render here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Settings API Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm p-4 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                <h3 class="text-sm font-bold text-gray-100 flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> Настройки Подключения
+                </h3>
+                <button id="closeSettingsBtn" class="text-gray-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-gray-400 mb-1">Режим Работы</label>
+                    <select id="apiModeSelect" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-gray-200 focus:outline-none focus:border-blue-500">
+                        <option value="mock">Демо-режим (Симуляция Инструментов)</option>
+                        <option value="openai">OpenAI API (gpt-4o / gpt-3.5-turbo)</option>
+                        <option value="gemini">Google Gemini API</option>
+                    </select>
+                </div>
+
+                <div id="apiKeyContainer" class="hidden space-y-1">
+                    <label class="block text-gray-400">API Key</label>
+                    <input id="apiKeyInput" type="password" placeholder="sk-..." class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-gray-200 focus:outline-none focus:border-blue-500">
+                    <p class="text-[10px] text-gray-5-00 text-gray-500">Ключ сохраняется строго локально в вашем браузере/приложении.</p>
+                </div>
+
+                <div>
+                    <label class="block text-gray-400 mb-1">Системная Инструкция (System Prompt)</label>
+                    <textarea id="systemPromptInput" rows="3" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-gray-200 focus:outline-none focus:border-blue-500 resize-none">Ты — полезный ассистент со встроенными инструментами на смартфоне. Если нужно что-то посчитать или запомнить, используй вызов функций.</textarea>
+                </div>
+            </div>
+
+            <div class="pt-2 flex gap-2 justify-end">
+                <button id="saveSettingsBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-xl text-xs active:scale-95 transition-all">
+                    Сохранить
+                </button>
+            </div>
+        </div>
     </div>
 
-    <div class="click-area">
-        <div class="main-btn">⚡</div>
-    </div>
-
+    <!-- Application JavaScript Engine -->
     <script>
-        let score = 0;
-        const scoreEl = document.getElementById('score');
-        const debugLog = document.getElementById('debugLog');
+        // State Management
+        const state = {
+            mode: localStorage.getItem('ai_mode') || 'mock',
+            apiKey: localStorage.getItem('ai_key') || '',
+            systemPrompt: localStorage.getItem('ai_sys') || 'Ты — полезный ассистент со встроенными инструментами на смартфоне.',
+            messages: JSON.parse(localStorage.getItem('ai_history') || '[]'),
+            memory: JSON.parse(localStorage.getItem('ai_memory') || '{}')
+        };
 
-        // Вешаем обработчик на весь документ, чтобы касание сработало в любой точке
-        document.addEventListener('pointerdown', (e) => {
-            score += 1;
-            scoreEl.textContent = score;
-            debugLog.textContent = "Клик зафиксирован! (" + score + ")";
+        // DOM Elements
+        const views = {
+            chat: document.getElementById('viewChat'),
+            tools: document.getElementById('viewTools'),
+            memory: document.getElementById('viewMemory')
+        };
+        const tabs = {
+            chat: document.getElementById('tabChat'),
+            tools: document.getElementById('tabTools'),
+            memory: document.getElementById('tabMemory')
+        };
+
+        const messagesContainer = document.getElementById('messagesContainer');
+        const userPromptInput = document.getElementById('userPromptInput');
+        const chatForm = document.getElementById('chatForm');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const typingText = document.getElementById('typingText');
+
+        const settingsModal = document.getElementById('settingsModal');
+        const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const apiModeSelect = document.getElementById('apiModeSelect');
+        const apiKeyContainer = document.getElementById('apiKeyContainer');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const systemPromptInput = document.getElementById('systemPromptInput');
+
+        // Init App
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadSettingsToUI();
+            renderMessages();
+            renderMemory();
+            setupAutoResize();
+            updateModeIndicator();
         });
-    </script>
-</body>
-</html>
+
+        // Tab Navigation Logic
+        function switchTab(target) {
+            Object.keys(views).forEach(key => {
+                views[key].classList.add('hidden');
+                tabs[key].classList.remove('active');
+            });
+            views[target].classList.remove('hidden');
+            tabs[target].classList.add('active');
+        }
+
+        tabs.chat.addEventListener('click', () => switchTab('chat'));
+        tabs.tools.addEventListener('click', () => switchTab('tools'));
+        tabs.memory.addEventListener('click', () => switchTab('memory'));
+
+        // Auto-resizing Textarea for Mobile Input
+        function setupAutoResize() {
+            userPromptInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+        }
+
+        // Settings Management
+        function loadSettingsToUI() {
+            apiModeSelect.value = state.mode;
+            apiKeyInput.value = state.apiKey;
+            systemPromptInput.value = state.systemPrompt;
+            toggleApiKeyVisibility();
+        }
+
+        function toggleApiKeyVisibility() {
+            if (apiModeSelect.value === 'mock') {
+                apiKeyContainer.classList.add('hidden');
+            } else {
+                apiKeyContainer.classList.remove('hidden');
+            }
+        }
+
+        apiModeSelect.addEventListener('change', toggleApiKeyVisibility);
+        settingsToggleBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+        closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+        saveSettingsBtn.addEventListener('click', () => {
+            state.mode = apiModeSelect.value;
+            state.apiKey = apiKeyInput.value.trim();
+            state.systemPrompt = systemPromptInput.value.trim();
+
+            localStorage.setItem('ai_mode', state.mode);
+            localStorage.setItem('ai_key', state.apiKey);
+            localStorage.setItem('ai_sys', state.systemPrompt);
+
+            updateModeIndicator();
+            settingsModal.classList.add('hidden');
+        });
+
+        function updateModeIndicator() {
+            const label = document.getElementById('currentModeLabel');
+            if (state.mode === 'mock') {
+                label.textConten
