@@ -1,0 +1,56 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_code:
+        description: 'HTML/JS код приложения'
+        required: true
+        default: '<h1>Hello World</h1>'
+      app_name:
+        description: 'Имя приложения'
+        required: false
+        default: 'MyAIApp'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Create Cordova Project
+        run: |
+          cordova create myapp com.ai.app MyApp
+          cd myapp
+          cordova platform add android
+
+      - name: Inject Custom Code
+        run: |
+          echo "${{ github.event.inputs.app_code }}" > myapp/www/index.html
+
+      - name: Build Android APK
+        run: |
+          cd myapp
+          cordova build android --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-apk
+          path: myapp/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          
